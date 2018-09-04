@@ -1,0 +1,35 @@
+sudo: required
+services:
+  - docker
+
+before_install:
+  - docker build -t jgdomine/react-test -f ./client/Dockerfile.dev ./client
+
+script:
+  - docker run jgdomine/react-test npm run test -- --coverage
+
+after_success:
+  - docker  build -t jgdomine/multi-client -f ./client
+  - docker  build -t jgdomine/multi-nginx -f ./nginx
+  - docker  build -t jgdomine/multi-server -f ./server
+  - docker  build -t jgdomine/multi-worker -f ./worker
+  # Log in to the docker CLI
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # Take those images and push them to docker hub
+  - docker push jgdomine/multi-client
+  - docker push jgdomine/multi-nginx
+  - docker push jgdomine/multi-server
+  - docker push jgdomine/multi-worker
+
+#deploy:
+#  provider: elasticbeanstalk
+#  region: "eu-west-3"
+#  app: "docker-react"
+#  env: "DockerReact-env"
+#  bucket_name: "elasticbeanstalk-eu-west-3-909229216481"
+#  bucket_path: "docker-react"
+#  on:
+#    branch: master
+#  access_key_id: $AWS_ACCESS_KEY
+#  secret_access_key:
+#    secure: "$AWS_SECRET_KEY"
